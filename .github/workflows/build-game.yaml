@@ -71,12 +71,6 @@ jobs:
         #   INFISICAL_TOKEN: ${{ env.INFISICAL_TOKEN }}
         run: mise run game:build-release
 
-      - name: Upload Rust lib artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.rustlib_artifact_name }}
-          path: ${{ matrix.rustlib_lib_path }}
-
       - name: Verify Rust lib exists
         shell: bash
         run: |
@@ -84,6 +78,12 @@ jobs:
             echo "Rust library not found at ${{ matrix.rustlib_lib_path }}"
             exit 1
           fi
+
+      - name: Upload Rust lib artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rustlib_artifact_name }}
+          path: ${{ matrix.rustlib_lib_path }}
 
   export-game:
     timeout-minutes: 10
