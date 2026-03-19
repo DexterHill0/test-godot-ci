@@ -127,6 +127,11 @@ jobs:
           mkdir -p ${{ matrix.rustlib_target_folder }}
           cp "build/rustlib/${{ matrix.rustlib_lib_name }}" "${{ matrix.rustlib_target_folder }}/${{ matrix.rustlib_lib_name }}"
 
+      - name: Install missing Linux libs
+        run: |
+          apt-get update
+          apt-get install -y libfontconfig1
+
       - name: "Export game build for ${{ matrix.platform }}"
         run: |
           mkdir -v -p build/${{ matrix.platform }}
