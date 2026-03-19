@@ -27,8 +27,9 @@ jobs:
             rustlib_lib_path: target/release/rustlib.dll # target/ultra-release/rustlib.dll
             godot_version: 4.6.1 # these arent used in this job, but to save the duplication i put them here so the yaml anchor expands them
             export_preset: "Windows"
-            export_name: "CircuitOfLife.zip"
-            # export_name: "CircuitOfLife${{needs.release.outputs.WHATEVER}}.zip"
+            export_name: "CircuitOfLife-windows"
+            export_extension: "exe"
+            # export_name: "CircuitOfLife-windows${{needs.release.outputs.WHATEVER}}.zip"
 
     name: build-rust (${{ matrix.platform }})
     runs-on: ${{ matrix.runs_on }}
@@ -135,13 +136,23 @@ jobs:
       - name: "Export game build for ${{ matrix.platform }}"
         run: |
           mkdir -v -p build/${{ matrix.platform }}
-          godot --headless --verbose --export-release --path "${{ env.GODOT_PROJECT_PATH }}" "${{ matrix.export_preset }}" "build/${{ matrix.platform }}/${{ matrix.export_name }}"
+          godot --headless --verbose --export-release --path "${{ env.GODOT_PROJECT_PATH }}" "${{ matrix.export_preset }}" "build/${{ matrix.platform }}/${{ matrix.export_name }}.${{ matrix.export_extension }}"
+
+      - name: Zip up artifacts (${{ matrix.platform }})
+        if: ${{ matrix.platform == 'windows' }}
+        shell: bash
+        run: |
+          cd build/${{ matrix.platform }}/
+
+          cp "${{ matrix.rustlib_target_folder }}/${{ matrix.rustlib_lib_name }}" build/${{ matrix.platform }}/ || true
+
+          zip -r "${{ matrix.export_name }}.zip" .
 
       - name: Upload zipped test build
         uses: actions/upload-artifact@v4
         with:
           name: game-${{matrix.platform}}-zip
-          path: build/${{ matrix.platform }}/${{ matrix.export_name }}
+          path: build/${{ matrix.platform }}/${{ matrix.export_name }}.zip
 
       # - name: Upload asset to GitHub release
       #   env:
