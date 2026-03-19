@@ -136,15 +136,15 @@ jobs:
       - name: "Export game build for ${{ matrix.platform }}"
         run: |
           mkdir -v -p build/${{ matrix.platform }}
-          godot --headless --verbose --export-release --path "${{ env.GODOT_PROJECT_PATH }}" "${{ matrix.export_preset }}" "build/${{ matrix.platform }}/${{ matrix.export_name }}.${{ matrix.export_extension }}"
+          godot --headless --verbose --export-release --path "${{ env.GODOT_PROJECT_PATH }}" "${{ matrix.export_preset }}" "../build/${{ matrix.platform }}/${{ matrix.export_name }}.${{ matrix.export_extension }}"
 
       - name: Zip up artifacts (${{ matrix.platform }})
         if: ${{ matrix.platform == 'windows' }}
         shell: bash
         run: |
-          cd build/${{ matrix.platform }}/
-
           cp "${{ matrix.rustlib_target_folder }}/${{ matrix.rustlib_lib_name }}" build/${{ matrix.platform }}/ || true
+
+          cd build/${{ matrix.platform }}/
 
           zip -r "${{ matrix.export_name }}.zip" .
 
