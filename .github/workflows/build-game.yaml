@@ -30,6 +30,7 @@ jobs:
             export_name: "CircuitOfLife.zip"
             # export_name: "CircuitOfLife${{needs.release.outputs.WHATEVER}}.zip"
 
+    name: build-rust (${{ matrix.platform }})
     runs-on: ${{ matrix.runs_on }}
 
     steps:
