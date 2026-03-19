@@ -1,0 +1,9 @@
+[settings]
+experimental = true
+
+[tools]
+rust = { version = "stable" }
+
+[tasks."game:build-release"]
+dir = "rustlib"
+run = "cargo build --release"

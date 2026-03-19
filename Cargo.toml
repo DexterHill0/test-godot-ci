@@ -1,2 +1,3 @@
 [workspace]
 members = ["rustlib"]
+resolver = "3"

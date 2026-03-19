@@ -1,0 +1,149 @@
+name: "RELEASE: game"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  GODOT_PROJECT_PATH: godot # game/godot
+
+jobs:
+  build-rust:
+    timeout-minutes: 30
+    # if: ${{ needs.release.outputs.game_release_created == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix: &matrix_platform_vars
+        include:
+          - platform: windows
+            runs_on: windows-latest
+            rustlib_artifact_name: rustlib-windows
+            rustlib_lib_name: rustlib.dll
+            rustlib_target_folder: target/release # target/ultra-release
+            rustlib_lib_path: target/release/rustlib.dll # target/ultra-release/rustlib.dll
+            godot_version: 4.6.1 # these arent used in this job, but to save the duplication i put them here so the yaml anchor expands them
+            export_preset: "Windows Desktop"
+            export_name: "CircuitOfLife.zip"
+            # export_name: "CircuitOfLife${{needs.release.outputs.WHATEVER}}.zip"
+
+    runs-on: ${{ matrix.runs_on }}
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        # with:
+        #   ref: ${{ needs.release.outputs.game_tag_name }}
+
+      - name: Install mise
+        uses: jdx/mise-action@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          install: false
+
+      - name: Install mise tools
+        run: mise install rust@stable --locked
+        # run: mise install rust@stable infisical@latest --locked
+
+      #   - name: Authenticate Infisical
+      #     shell: bash
+      #     run: |
+      #       TOKEN=$(infisical login \
+      #         --method=universal-auth \
+      #         --client-id='${{ vars.INFISICAL_CI_USER }}' \
+      #         --client-secret='${{ secrets.INFISICAL_CI_SECRET }}' \
+      #         --silent --plain)
+
+      #       echo "::add-mask::$TOKEN"
+      #       echo "INFISICAL_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: game-${{ matrix.platform }}
+
+      - name: Build Rust lib
+        # env:
+        #   INFISICAL_TOKEN: ${{ env.INFISICAL_TOKEN }}
+        run: mise run game:build-release
+
+      - name: Upload Rust lib artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rustlib_artifact_name }}
+          path: ${{ matrix.rustlib_lib_path }}
+
+      - name: Verify Rust lib exists
+        shell: bash
+        run: |
+          if [ ! -f "${{ matrix.rustlib_lib_path }}" ]; then
+            echo "Rust library not found at ${{ matrix.rustlib_lib_path }}"
+            exit 1
+          fi
+
+  export-game:
+    timeout-minutes: 10
+    # if: ${{ needs.release.outputs.game_release_created == 'true' }}
+    needs: [build-rust]
+    # needs: [release, build-rust]
+
+    strategy:
+      matrix: *matrix_platform_vars
+
+    runs-on: ubuntu-24.04
+
+    container:
+      image: barichello/godot-ci:${{ matrix.godot_version }}
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        # with:
+        #   ref: ${{ needs.release.outputs.game_tag_name }}
+        #   lfs: true
+
+      - name: Download Rust lib artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.rustlib_artifact_name }}
+          path: build/rustlib
+
+      - name: Setup Godot export templates
+        run: |
+          mkdir -v -p ~/.local/share/godot/export_templates/
+          mkdir -v -p ~/.config/
+          if [ -d /root/.config/godot ]; then
+            mv /root/.config/godot ~/.config/godot
+          fi
+          mv /root/.local/share/godot/export_templates/${{ matrix.godot_version }}.stable ~/.local/share/godot/export_templates/${{ matrix.godot_version }}.stable
+
+      - name: "Copy Rust lib into project"
+        run: |
+          mkdir -p ${{ matrix.rustlib_target_folder }}
+          cp "build/rustlib/${{ matrix.rustlib_lib_name }}" "${{ matrix.rustlib_target_folder }}/${{ matrix.rustlib_lib_name }}"
+
+      - name: "Export game build for ${{ matrix.platform }}"
+        run: |
+          mkdir -v -p build/${{ matrix.platform }}
+          godot --headless --verbose --export-release --path "${{ env.GODOT_PROJECT_PATH }}" "${{ matrix.export_preset }}" "build/${{ matrix.platform }}/${{ matrix.export_name }}"
+
+      - name: Upload zipped test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-${{matrix.platform}}-zip
+          path: build/${{ matrix.platform }}/${{ matrix.export_name }}
+
+      # - name: Upload asset to GitHub release
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     gh release upload \
+      #       "${{ needs.release.outputs.game_tag_name }}" \
+      #       "dist/circuit-of-life-windows-${{ needs.release.outputs.game_version }}.zip" \
+      #       --clobber
