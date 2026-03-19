@@ -1,9 +1,6 @@
 name: "RELEASE: game"
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
