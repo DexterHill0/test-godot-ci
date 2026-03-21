@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-godot = "0.4.5"
+godot = { git = "https://github.com/godot-rust/gdext", rev = "869a336fb981f4c676a0ccb6a9422fad95a4138e", features = [
+    "serde",
+    "api-4-6",
+] }
 
 [lib]
 crate-type = ["cdylib"]

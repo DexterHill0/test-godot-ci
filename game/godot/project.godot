@@ -23,3 +23,7 @@ config/icon="res://icon.svg"
 
 rendering_device/driver.windows="d3d12"
 textures/vram_compression/import_etc2_astc=true
+
+[autoload]
+
+GlobalGlobal="res://scenes/Global.tscn"
