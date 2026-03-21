@@ -1,3 +1,13 @@
 [workspace]
-members = ["rustlib"]
+members = ["game/rustlib"]
 resolver = "3"
+
+[profile.dev-rdep]
+inherits = "dev"
+
+[profile.dev-rdep.package."*"]
+opt-level = 3
+
+[profile.ultra-release]
+inherits = "release"
+opt-level = 3

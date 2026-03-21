@@ -26,10 +26,9 @@ jobs:
             rustlib_target_folder: target/release # target/ultra-release
             rustlib_lib_path: target/release/rustlib.dll # target/ultra-release/rustlib.dll
             godot_version: 4.6.1 # these arent used in this job, but to save the duplication i put them here so the yaml anchor expands them
-            export_preset: "Windows"
-            export_name: "CircuitOfLife-windows"
+            export_preset: "windows-ci"
+            export_name: "game-test"
             export_extension: "exe"
-            # export_name: "CircuitOfLife-windows${{needs.release.outputs.WHATEVER}}.zip"
 
     name: build-rust (${{ matrix.platform }})
     runs-on: ${{ matrix.runs_on }}
@@ -48,19 +47,6 @@ jobs:
 
       - name: Install mise tools
         run: mise install rust@stable --locked
-        # run: mise install rust@stable infisical@latest --locked
-
-      #   - name: Authenticate Infisical
-      #     shell: bash
-      #     run: |
-      #       TOKEN=$(infisical login \
-      #         --method=universal-auth \
-      #         --client-id='${{ vars.INFISICAL_CI_USER }}' \
-      #         --client-secret='${{ secrets.INFISICAL_CI_SECRET }}' \
-      #         --silent --plain)
-
-      #       echo "::add-mask::$TOKEN"
-      #       echo "INFISICAL_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
@@ -153,12 +139,3 @@ jobs:
         with:
           name: game-${{matrix.platform}}-zip
           path: build/${{ matrix.platform }}/${{ matrix.export_name }}.zip
-
-      # - name: Upload asset to GitHub release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     gh release upload \
-      #       "${{ needs.release.outputs.game_tag_name }}" \
-      #       "dist/circuit-of-life-windows-${{ needs.release.outputs.game_version }}.zip" \
-      #       --clobber
